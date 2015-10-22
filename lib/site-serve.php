@@ -83,22 +83,31 @@
      public function sendLead($arrayData)
      {
          $postCreated = $this->_createPost($arrayData);
+         /*
          $postResult = SiteServeAPI::uploadlead($arrayData,$endPoint);  
-         $this->_updatePost($postResult);
+         */
      }
     
      private function _createPost($arrayData) {
-        wp_insert_post( $post, $wp_error);
+       
+        $post = array(
+                          'post_title'    => $arrayData['first_name'] . $arrayData['last_name'],
+                          'post_content'  => $arrayData['campaign_name'],
+                          'post_status'   => 'publish',
+                          'post_type'     => WPSiteServe::POST_TYPE
+                         );
+        $post_id = wp_insert_post( $post, $wp_error);                 
+        foreach ($arrayData as $key=>$value) {
+            update_post_meta($post_id,$key,$value);
+        }
         
      }
      
-     private function _updatePost($status) {
-         
+     public function updateLeadStatus($post_id,$status) {
+        foreach ($status as $key=>$value) {
+            update_post_meta($post_id,$key,$value);
+        }
      }
-     
-     public function updateLeadStatus($post) {
-         
-     } 
      
      public function _unitTest() {
         SiteServeAPI::generateAuthorizationToken($this->$endPoint);

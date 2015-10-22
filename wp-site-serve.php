@@ -40,12 +40,56 @@
        if(isset($_GET['SiteServe'])) {
            if( isset($_GET['action']) && ($_GET['action'] == 'postlead')) {
               $SiteServe = new SiteServe();
-              $postdata = array('first_name'=>'Jiun','last_name'=>'Chin');
+              //Status can be Success, Failed, Pending
+              $postdata = array('first_name'=>'Jiun','last_name'=>'Chin','status'=>'Pending');
               $SiteServe->sendLead($postdata);
               exit;
             }
-       }    
+       }
+       add_filter('manage_' . self::POST_TYPE . '_posts_columns', array(__CLASS__,'site_serve_custom_table_header'));
+       add_action('manage_' . self::POST_TYPE . '_posts_custom_column', array(__CLASS__,'site_serve_custom_table_custom'), 10, 2 );
     }
+    
+    public static function site_serve_custom_table_header ( $columns ) {
+        unset($columns['title']);
+        unset($columns['date']);
+        $columns['first_name']  = 'First Name';
+        $columns['last_name']  = 'Last Name';
+        $columns['email']  = 'Email';
+        $columns['campaign_id']  = 'Campaign ID';
+        $columns['campaign_name']  = 'Campaign Name';
+        $columns['job_title']  = 'Job Title';
+        $columns['department']  = 'Department';
+        $columns['company']  = 'Company';
+        $columns['address_line1']  = 'Address';
+        $columns['company_size']  = 'Company Size';
+        $columns['city']  = 'City';
+        $columns['state']  = 'State';
+        $columns['zip_code']  = 'Zip';
+        $columns['country']  = 'Country';
+        $columns['phone']  = 'Phone';
+        $columns['status']  = 'Status';
+        $columns['extra'] = 'Extra';
+        $columns['date'] = 'Date';
+        return $columns;
+    }
+    
+    public static function site_serve_custom_table_custom ($column_name,$post_id) {
+        
+      if($column_name == 'extra')   {
+          echo 'Campaign Id:' . get_post_meta($post_id,'campaign_id',true) . '<br/>';
+          echo 'Campaign Name:' . get_post_meta($post_id,'campaign_name',true) . '<br/>';
+          echo 'Placement Name:' . get_post_meta($post_id,'placement_name',true) . '<br/>';
+          echo 'Order Number:' . get_post_meta($post_id,'unique_order_number',true) . '<br/>';
+          echo 'Response type:' . get_post_meta($post_id,'response_type',true) . '<br/>';
+          abort;
+      }       
+      $metavalue = get_post_meta( $post_id, $column_name, true );
+      if(!empty($metavalue)) {
+          echo $metavalue;
+      }    
+    }
+    
     
     public static function add_includes()
     {
