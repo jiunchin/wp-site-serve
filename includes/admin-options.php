@@ -11,12 +11,60 @@
   <input type="hidden" name="test" value="true">      
   <?php 
      submit_button( 'Test API', 'primary', 'submit-form', false );
+     echo '<br><br>';
+     submit_button( 'Test Form Post', 'primary', 'submit-form-post-test', false );
   ?>
 </form>
 
 <?php
 
-  if(isset($_POST['test']))
+  if(isset($_POST['submit-form-post-test'])) {
+    
+    $url = 'https://cfo-jchin.c9.io/?SiteServe&action=postlead';  
+    echo '<br/>' . 'Test form submit' . '<br/>';
+    
+    $leadData = array('campaign_id'=>'C3634',
+                      'campaign_name'=>'2015 Q1|IBM_Non-CA_SWG_BA for Finance|Non-Intel|NYC|USA',
+                      'publisher_id' => 'CFO.COM(00100324)',
+                      'placement_name' => 'CFO.com|Business Analytics for Finance_Content Syndication|0x0',
+                      'source_site' => 'CFO.com',
+                      'unique_order_number' => '16001',
+                      'job_title' => 'CFO',
+                      'last_name' => 'Chin',
+                      'company' => 'KARCHER NORTH AMERICA',
+                      'company_size' => '5,000-9,999',
+                      'address_line_1' => '744 Some where',
+                      'state' => 'CO',
+                      'zip_code' => '801102166',
+                      'country' => 'US',
+                      'first_name' => 'test',
+                      'city' => 'ENGLEWOOD',
+                      'phone' => '7180093401',
+                      'email' => 'tes3t@gmail.com',
+                      'ov_code' => 'ov4502',
+                      'tactic' => '101G92BW',
+                      'asset_name' => 'Test Asset',
+                      'response_type'=> 'WEBRESP',
+                      'questionnum1_ooemail' => 'Q_XSYS:OOEMAIL',
+                      'email_verification' => 'CHECKED',
+                      'questionnum2_ootele' => 'Q_XSYS:OOTELE',
+                      'phone_verification' => 'CHECKED',
+                      'questionnum3_oopostal'=> 'Q_XSYS:OOPOSTAL',
+                      'zipcode_verification' => 'CHECKED');
+                      
+    echo '<form action="' . $url . '" name="postlead" method="post">';
+  
+    foreach ($leadData as $attribute=>$value) {
+      echo '<label>' . $attribute . '</label>';
+      echo '<input type="text" size="100" name="' . $attribute . '" value="' . $value . '"/>' . '<br/>';
+    }
+    echo '<input type="submit" name="submit" value="submit"/>'; 
+    echo '</form>';
+
+
+  }
+
+  if(isset($_POST['submit-form']))
   {
       echo 'Testing Site Serve API <br/>';
       $SiteServeAPI = new SiteServeAPI();
@@ -58,21 +106,23 @@
                         'publisher_id' => 'CFO.COM(00100324)',
                         'placement_name' => 'CFO.com|Business Analytics for Finance_Content Syndication|0x0',
                         'source_site' => 'CFO.com',
-                        'unique_order_number' => '16000',
+                        'unique_order_number' => '16001',
+                        'job_title' => 'CFO',
+                        'last_name' => 'Chin',
                         'company' => 'KARCHER NORTH AMERICA',
                         'company_size' => '5,000-9,999',
-                        'address_line1' => '744 Some where',
+                        'address_line_1' => '744 Some where',
                         'state' => 'CO',
                         'zip_code' => '801102166',
                         'country' => 'US',
                         'first_name' => 'test',
                         'city' => 'ENGLEWOOD',
                         'phone' => '7180093401',
-                        'email' => 'test@gmail.com',
+                        'email' => 'test2@gmail.com',
                         'ov_code' => 'ov4502',
-                        'tactic' => 'C27401FW',
+                        'tactic' => '101G92BW',
                         'asset_name' => 'Test Asset',
-                        'response_type'=> 'WEBRES',
+                        'response_type'=> 'WEBRESP',
                         'questionnum1_ooemail' => 'Q_XSYS:OOEMAIL',
                         'email_verification' => 'CHECKED',
                         'questionnum2_ootele' => 'Q_XSYS:OOTELE',

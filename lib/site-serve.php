@@ -34,79 +34,114 @@
      
      /* This function process incoming form post and format data to send to site serve */
      public function processFormPost($formPost) {
-         $acceptedPostFields = array('campaign_id',
-                                     'campaign_name',
-                                     'publisher_id',
-                                     'placement_name',
-                                     'source_site',
-                                     'unique_order_number',
-                                     'title',
-                                     'first_name',
-                                     'middle_name',
-                                     'last_name',
-                                     'job_title',
-                                     'department',
-                                     'company',
-                                     'company_size',
-                                     'address_line1',
-                                     'address_line2',
-                                     'address_line3',
-                                     'city',
-                                     'state',
-                                     'zip_code',
-                                     'country',
-                                     'phone',
-                                     'extension',
-                                     'fax',
-                                     'email',
-                                     'ts_received',
-                                     'geography',
-                                     'ov_code',
-                                     'ww_score',
-                                     'custinfo1',
-                                     'custinfo2',
-                                     'privacy',
-                                     'tactic',
-                                     'response_type',
-                                     'asset_name',
-                                     'response_type',
-                                     'questionnum1_ooemail',
-                                     'email_verification',
-                                     'questionnum2_ootele',
-                                     'phone_verification',
-                                     'questionnum3_oopostal',
-                                     'zipcode_verification');
-         $filteredPostFieldsDefault = array();
-         $this->sendLead($filteredPostFields);
+         $acceptedPostFields = array('campaign_id'=>'',
+                                     'campaign_name'=>'',
+                                     'publisher_id'=>'',
+                                     'placement_name'=>'',
+                                     'source_site'=>'',
+                                     'unique_order_number'=>'',
+                                     'title'=>'',
+                                     'first_name'=>'',
+                                     'middle_name'=>'',
+                                     'last_name'=>'',
+                                     'job_title'=>'',
+                                     'department'=>'',
+                                     'company'=>'',
+                                     'company_size'=>'',
+                                     'address_line_1'=>'',
+                                     'address_line_2'=>'',
+                                     'address_line_3'=>'',
+                                     'city'=>'',
+                                     'state'=>'',
+                                     'zip_code'=>'',
+                                     'country'=>'',
+                                     'phone'=>'',
+                                     'extension'=>'',
+                                     'fax'=>'',
+                                     'email'=>'',
+                                     'ts_received'=>'',
+                                     'geography'=>'',
+                                     'ov_code'=>'',
+                                     'ww_score'=>'',
+                                     'custinfo1'=>'',
+                                     'custinfo2'=>'',
+                                     'privacy'=>'',
+                                     'tactic'=>'',
+                                     'response_type'=>'',
+                                     'asset_name'=>'',
+                                     'response_type'=>'',
+                                     'questionnum1_ooemail'=>'',
+                                     'email_verification'=>'',
+                                     'questionnum2_ootele'=>'',
+                                     'phone_verification'=>'',
+                                     'questionnum3_oopostal'=>'',
+                                     'zipcode_verification'=>'');
+                                     
+         $filteredPostFieldsDefault = array_intersect_key($formPost,$acceptedPostFields);
+         
+         $this->sendLead($filteredPostFieldsDefault);
+         
+         echo 'DONE';
      }
      
      public function sendLead($arrayData)
      {
-         $postCreated = $this->_createPost($arrayData);
-         /*
-         $postResult = SiteServeAPI::uploadlead($arrayData,$endPoint);  
-         */
+         //Create The Post
+         $post_id = $this->_createPost($arrayData);
+         
+         //Change unique order number
+         $arrayData['unique_order_number'] = $post_id;
+         
+         $SiteServeAPI = new SiteServeAPI();
+         $response = $SiteServeAPI->generateAuthorizationToken($this->getEndPoint());
+         $authToken = $response->authorization_token;
+         
+         $response = $SiteServeAPI->generateAccessToken($this->getEndPoint(),$authToken);
+         $access_token = $response->access_token;
+         $refresh_token = $response->refresh_token;
+    
+         $data = array('access_token'=>$response->access_token);
+         $leadData = $arrayData;
+         $data['leadData'] = $leadData;                
+         $postResult = $SiteServeAPI->uploadlead($this->getEndPoint(),$data);
+         
+         $postResponse = $postResult->response;
+         $postError = $postResponse->errors;
+         
+         $status = $postResponse->status;
+
+         if($status == 'Failed') {
+           $message = serialize($postError);
+           update_post_meta($post_id,'error',$message);
+         }
+       
+         //Update Post Result Status
+         update_post_meta($post_id,'status',$status); 
      }
     
      private function _createPost($arrayData) {
        
         $post = array(
                           'post_title'    => $arrayData['first_name'] . $arrayData['last_name'],
-                          'post_content'  => $arrayData['campaign_name'],
+                          'post_content'  => serialize($arrayData),
                           'post_status'   => 'publish',
                           'post_type'     => WPSiteServe::POST_TYPE
                          );
-        $post_id = wp_insert_post( $post, $wp_error);                 
+        $post_id = wp_insert_post( $post, $wp_error);  
+        
+        
         foreach ($arrayData as $key=>$value) {
             update_post_meta($post_id,$key,$value);
         }
-        
+        return $post_id;
      }
      
-     public function updateLeadStatus($post_id,$status) {
+     public function updateLeadStatus($post_id) {
+         
         foreach ($status as $key=>$value) {
             update_post_meta($post_id,$key,$value);
         }
+        return true;
      }
      
      public function _unitTest() {

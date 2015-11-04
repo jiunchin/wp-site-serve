@@ -25,8 +25,7 @@
      
      public static function admin_init() {
          if(is_admin()) {
-            
-             self::settings_init();
+             self::settings_init(); 
          }
      }
      
@@ -41,13 +40,18 @@
            if( isset($_GET['action']) && ($_GET['action'] == 'postlead')) {
               $SiteServe = new SiteServe();
               //Status can be Success, Failed, Pending
-              $postdata = array('first_name'=>'Jiun','last_name'=>'Chin','status'=>'Pending');
-              $SiteServe->sendLead($postdata);
+              $postdata = $_POST;
+              $SiteServe->processFormPost($postdata);
               exit;
             }
        }
        add_filter('manage_' . self::POST_TYPE . '_posts_columns', array(__CLASS__,'site_serve_custom_table_header'));
        add_action('manage_' . self::POST_TYPE . '_posts_custom_column', array(__CLASS__,'site_serve_custom_table_custom'), 10, 2 );
+       add_action('restrict_manage_posts', array(__CLASS__,'wp_site_serve_filter_by_status'));
+       add_filter('parse_query', array(__CLASS__,'wp_site_serve_post_filtered' ));
+       add_action('admin_footer-edit.php', array(__CLASS__,'custom_bulk_admin_footer'));
+       add_action('load-edit.php', array(__CLASS__,'site_serve_custom_bulk_action'));
+       add_action('admin_notices', array(__CLASS__,'site_serve_custom_bulk_admin_notices'));
     }
     
     public static function site_serve_custom_table_header ( $columns ) {
@@ -61,7 +65,7 @@
         $columns['job_title']  = 'Job Title';
         $columns['department']  = 'Department';
         $columns['company']  = 'Company';
-        $columns['address_line1']  = 'Address';
+        $columns['address_line_1']  = 'Address';
         $columns['company_size']  = 'Company Size';
         $columns['city']  = 'City';
         $columns['state']  = 'State';
@@ -69,6 +73,7 @@
         $columns['country']  = 'Country';
         $columns['phone']  = 'Phone';
         $columns['status']  = 'Status';
+        $columns['error']  = 'Message';
         $columns['extra'] = 'Extra';
         $columns['date'] = 'Date';
         return $columns;
@@ -228,7 +233,94 @@
     public static function setting_site_serve_test_secret_callback_function() {
         echo '<input name="site_serve_setting_test_client_secret" id="site_serve_setting_test_client_secret" size="75" type="text value="" value="' . get_option( 'site_serve_setting_test_client_secret','' ) . '" />';
     }
+    
+    
+    public static function wp_site_serve_filter_by_status() {
+    	global $typenow;
+    	$post_type = self::POST_TYPE;
+    	$leadStatus = array('All Status'=>'',
+    	                    'Success'=> 'Success',
+    	                    'Failed'=>'Failed',
+    	                    'Pending'=>'Pending');
+    	                    
+    	if ($typenow == $post_type) {
+    		$selected      = isset($_GET['LeadStatus']) ? $_GET['LeadStatus'] : '';
+    		echo '<select name="LeadStatus">';
+    		foreach ($leadStatus as $key=>$value) {
+    		  if($selected == $value) {
+    		      echo '<option selected value="' . $value . '">' . $key . '</option>';   
+    		  }
+    		  else {
+    		    echo '<option value="' . $value . '">' . $key . '</option>';   
+    		  }
+    		}    
+    		echo '</select>';
+    	};
+    }
+    
+    public static function wp_site_serve_post_filtered( $query ){
+        global $pagenow;
+        if (isset($_GET['post_type']) && self::POST_TYPE == $_GET['post_type']) {
+            if(empty($_GET['LeadStatus'])) { return; }
+            $query->query_vars['meta_key'] = 'status';
+            $query->query_vars['meta_value'] = $_GET['LeadStatus'];
+        } else {
+            return;
+        }
+    }
+    
+    public static function custom_bulk_admin_footer() {
+      global $post_type;
+      if($post_type == self::POST_TYPE) {
+        ?>
+        <script type="text/javascript">
+          jQuery(document).ready(function() {
+            jQuery('<option>').val('update_status').text('Update Status').appendTo("select[name='action']");
+          });
+        </script>
+        <?php
+      }
+    }    
 
+    function site_serve_custom_bulk_admin_notices() {
+      global $post_type, $pagenow;
+     
+      if($pagenow == 'edit.php' && $post_type == self::POST_TYPE &&
+         isset($_REQUEST['updated']) && (int) $_REQUEST['updated']) {
+        $message = sprintf( _n( 'Post updated.', '%s posts updated.', $_REQUEST['updated'] ), number_format_i18n( $_REQUEST['updated'] ) );
+        echo "<div class='updated'><p>{$message}</p></div>";
+      }
+    }
+    
+    public static function site_serve_custom_bulk_action() {
+      // 1. get the action
+      $wp_list_table = _get_list_table('WP_Posts_List_Table');
+      $wp_site_serve = new SiteServe();
+      $action = $wp_list_table->current_action();
+      // 2. security check
+      switch($action) {
+        // 3. Perform the action
+        case 'update_status':
+          $updated = 0;
+          foreach( $post_ids as $post_id ) {
+            if ($$wp_site_serve->update_status($post_id))
+            {
+                echo 'i did it';
+            }
+            else {
+              wp_die( __('Error updating status.') );
+            }
+            $updated++;
+          }
+          // build the redirect url
+          $sendback = add_query_arg( array('updated' => $updated, 'ids' => join(',', $post_ids) ), $sendback );
+        break;
+        default: return;
+      }
+      // 4. Redirect client
+      wp_redirect($sendback);
+      exit();
+    }
 
     public static function setting_mode_callback_function() {
         $mode = get_option( 'site_serve_setting_mode','Test');
