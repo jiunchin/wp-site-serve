@@ -20,6 +20,7 @@
         add_action( 'admin_menu', array( __CLASS__, 'add_plugin_options_menu' ) );
         add_action( 'admin_init', array( $this,'admin_init' ) );
         add_action('init',  array( __CLASS__,'action_init' ),0);
+        //add_action( 'post_updated', array(__CLASS__,'resend_lead'), 10, 3 );  Problem with send back remove for now
         register_activation_hook( __FILE__, array( __CLASS__, 'plugin_activate' ) );
      }
      
@@ -41,7 +42,7 @@
               $SiteServe = new SiteServe();
               //Status can be Success, Failed, Pending
               $postdata = $_POST;
-              $SiteServe->processFormPost($postdata);
+              $SiteServe->sendLead($postdata);
               exit;
             }
        }
@@ -276,6 +277,7 @@
         <script type="text/javascript">
           jQuery(document).ready(function() {
             jQuery('<option>').val('update_status').text('Update Status').appendTo("select[name='action']");
+            jQuery('<option>').val('resend_lead').text('Resend Lead').appendTo("select[name='action']");
           });
         </script>
         <?php
@@ -297,29 +299,62 @@
       $wp_list_table = _get_list_table('WP_Posts_List_Table');
       $wp_site_serve = new SiteServe();
       $action = $wp_list_table->current_action();
+      $post_ids = $_GET['post'];
       // 2. security check
       switch($action) {
         // 3. Perform the action
         case 'update_status':
-          $updated = 0;
           foreach( $post_ids as $post_id ) {
-            if ($$wp_site_serve->update_status($post_id))
-            {
-                echo 'i did it';
-            }
-            else {
-              wp_die( __('Error updating status.') );
-            }
-            $updated++;
+            $wp_site_serve->updateLeadStatus($post_id);
           }
           // build the redirect url
-          $sendback = add_query_arg( array('updated' => $updated, 'ids' => join(',', $post_ids) ), $sendback );
+          $sendback = add_query_arg( array('post_type'=>'site_serve_lead','updated' => $updated, 'ids' => join(',', $post_ids) ), $sendback );
+        break;
+        case 'resend_lead':
+            foreach( $post_ids as $post_id ) {
+               $data = get_post_meta($post_id);
+               if(!empty($data)) {
+                   $data = self::postMetaKeyToArray($data);
+                   $status = $wp_site_serve->sendLead($data);
+                   wp_delete_post($post_id);
+               }
+            }
+          $sendback = add_query_arg( array('post_type'=>'site_serve_lead','updated' => $updated), $sendback );
         break;
         default: return;
       }
       // 4. Redirect client
       wp_redirect($sendback);
       exit();
+    }
+    
+    /* Problem with send back so disable for now
+    function resend_lead($post_ID, $post_after, $post_before){
+      if($post_before->post_type != SELF::POST_TYPE) { return; }
+       
+       $wp_site_serve = new SiteServe();          
+       $data = get_post_meta($post_ID);
+       
+       if(!empty($data)) {
+           $data = self::postMetaKeyToArray($data);
+           $status = $wp_site_serve->sendLead($data);
+           //wp_delete_post($post_ID);
+           $sendback = add_query_arg( array('post_type'=>'site_serve_lead'), $sendback );
+           
+           //var_dump($sendback);
+           //exit;
+           wp_redirect($sendback);
+       }
+    }*/
+    
+    public static function postMetaKeyToArray($postmetakeys) {
+        $tempArray = array();
+        foreach ($postmetakeys as $meta => $key) {
+            //$tempArray[$meta] = $postmetakeys[$key][0];
+            $value = $key[0];
+            $tempArray[$meta] = $value;
+        }
+        return $tempArray;
     }
 
     public static function setting_mode_callback_function() {

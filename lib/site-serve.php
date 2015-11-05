@@ -33,7 +33,7 @@
      }
      
      /* This function process incoming form post and format data to send to site serve */
-     public function processFormPost($formPost) {
+     public function sendLead($arrayData) {
          $acceptedPostFields = array('campaign_id'=>'',
                                      'campaign_name'=>'',
                                      'publisher_id'=>'',
@@ -77,15 +77,8 @@
                                      'questionnum3_oopostal'=>'',
                                      'zipcode_verification'=>'');
                                      
-         $filteredPostFieldsDefault = array_intersect_key($formPost,$acceptedPostFields);
+         $arrayData = array_intersect_key($arrayData,$acceptedPostFields);
          
-         $this->sendLead($filteredPostFieldsDefault);
-         
-         echo 'DONE';
-     }
-     
-     public function sendLead($arrayData)
-     {
          //Create The Post
          $post_id = $this->_createPost($arrayData);
          
@@ -117,6 +110,8 @@
        
          //Update Post Result Status
          update_post_meta($post_id,'status',$status); 
+         update_post_meta($post_id,'request_id',$postResponse->request_id); 
+         
      }
     
      private function _createPost($arrayData) {
@@ -137,11 +132,21 @@
      }
      
      public function updateLeadStatus($post_id) {
+        //Get data from post id
+         $request_id = get_post_meta($post_id,'request_id',true);
+         $SiteServeAPI = new SiteServeAPI();
+         $response = $SiteServeAPI->generateAuthorizationToken($this->getEndPoint());
+         $authToken = $response->authorization_token;
+         $response = $SiteServeAPI->generateAccessToken($this->getEndPoint(),$authToken);
+         $access_token = $response->access_token;
+
+         $data = array('access_token'=>$access_token,'request_id'=>$request_id);
+         $leadStatusResult = $SiteServeAPI->getLeadStatus($this->getEndPoint(),$data);
+         $leadStatusResponse  = $leadStatusResult->response;
+         $status = $leadStatusResponse->status;
          
-        foreach ($status as $key=>$value) {
-            update_post_meta($post_id,$key,$value);
-        }
-        return true;
+         update_post_meta($post_id,'status',$status); 
+        
      }
      
      public function _unitTest() {
