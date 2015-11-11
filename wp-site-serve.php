@@ -39,10 +39,12 @@
        self::register_wp_site_serve_post_type();
        if(isset($_GET['SiteServe'])) {
            if( isset($_GET['action']) && ($_GET['action'] == 'postlead')) {
+             $result = array('Result'=>'Good');
               $SiteServe = new SiteServe();
               //Status can be Success, Failed, Pending
               $postdata = $_POST;
               $SiteServe->sendLead($postdata);
+              echo json_encode($result);
               exit;
             }
        }
