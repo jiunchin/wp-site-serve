@@ -20,7 +20,7 @@
 
   if(isset($_POST['submit-form-post-test'])) {
     
-    $url = 'https://cfo-jchin.c9.io/?SiteServe&action=postlead';  
+    $url = '/?SiteServe&action=postlead';  
     echo '<br/>' . 'Test form submit' . '<br/>';
     
     $leadData = array('campaign_id'=>'C3634',

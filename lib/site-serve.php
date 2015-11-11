@@ -49,7 +49,7 @@
                                      'company'=>'',
                                      'company_size'=>'',
                                      'address_line_1'=>'',
-                                     'address_line_2'=>'',
+                                     'address_line_2'=>'', 
                                      'address_line_3'=>'',
                                      'city'=>'',
                                      'state'=>'',
@@ -80,6 +80,7 @@
          $arrayData = array_intersect_key($arrayData,$acceptedPostFields);
          
          //Create The Post
+         try {
          $post_id = $this->_createPost($arrayData);
          
          //Change unique order number
@@ -111,6 +112,10 @@
          //Update Post Result Status
          update_post_meta($post_id,'status',$status); 
          update_post_meta($post_id,'request_id',$postResponse->request_id); 
+         }
+         catch(Exception $e) {
+             update_post_meta($post_id,'error',$e->getMessage());
+         }
          
      }
     
