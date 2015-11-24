@@ -105,10 +105,9 @@
          $status = $postResponse->status;
 
          if($status == 'Failed' || empty($status)) {
-           $message = serialize($postError);
-           $message = $message . '|' . serialize($postResponse);
+           $message = serialize($postResult);
            update_post_meta($post_id,'error',$message);
-             update_post_meta($post_id,'status','Failed'); 
+           update_post_meta($post_id,'status','Failed'); 
          }
        
          //Update Post Result Status
@@ -117,6 +116,7 @@
          }
          catch(Exception $e) {
              update_post_meta($post_id,'error',$e->getMessage());
+             update_post_meta($post_id,'status','Failed'); 
          }
          
      }
