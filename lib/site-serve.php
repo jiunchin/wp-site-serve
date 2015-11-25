@@ -104,8 +104,8 @@
          
          $status = $postResponse->status;
 
-         if($status == 'Failed' || empty($status) || empty($postResponse->request_id)) {
-           $message = serialize($postResult);
+         if($status == 'Failed' || empty($status) || empty($request_id)) {
+           $message = serialize($this->getResponseError($postResponse));
            update_post_meta($post_id,'error',$message);
            update_post_meta($post_id,'status','Failed'); 
          }
@@ -114,13 +114,23 @@
            update_post_meta($post_id,'status',$status); 
            update_post_meta($post_id,'request_id',$postResponse->request_id); 
          }
-         
          }
          catch(Exception $e) {
              update_post_meta($post_id,'error',$e->getMessage());
              update_post_meta($post_id,'status','Failed'); 
          }
          
+     }
+     
+     private function getResponseError($postResult) {
+         $returnResult = $postResult;
+         if(isset($postResult->errors)) {
+             $error = $postResult->errors;
+             if(!empty($error)) {
+                 $returnResult = $error[0];
+             }
+         }
+         return $returnResult;
      }
     
      private function _createPost($arrayData) {
