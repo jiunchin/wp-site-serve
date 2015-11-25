@@ -104,15 +104,17 @@
          
          $status = $postResponse->status;
 
-         if($status == 'Failed' || empty($status)) {
+         if($status == 'Failed' || empty($status) || empty($request_id)) {
            $message = serialize($postResult);
            update_post_meta($post_id,'error',$message);
            update_post_meta($post_id,'status','Failed'); 
          }
-       
-         //Update Post Result Status
-         update_post_meta($post_id,'status',$status); 
-         update_post_meta($post_id,'request_id',$postResponse->request_id); 
+         else {
+           //Update Post Result Status
+           update_post_meta($post_id,'status',$status); 
+           update_post_meta($post_id,'request_id',$postResponse->request_id); 
+         }
+         
          }
          catch(Exception $e) {
              update_post_meta($post_id,'error',$e->getMessage());
